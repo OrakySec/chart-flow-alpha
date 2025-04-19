@@ -77,47 +77,45 @@ const generateMockCandles = (
   return candles;
 };
 
+// Custom Candlestick Component
 const CustomCandlestick = (props: any) => {
-  const {
-    x,
-    y,
-    width,
-    height,
-    open,
-    close,
-    low,
-    high,
-    fill,
-    index
-  } = props;
-
+  const { x, y, width, height, open, close, low, high, fill } = props;
+  
+  // Determine if candle is bullish (green) or bearish (red)
   const isGreen = close > open;
   const color = isGreen ? '#00FF7F' : '#FF4136';
   
+  // Calculate positions
+  const openY = y + height * (1 - (open - low) / (high - low));
+  const closeY = y + height * (1 - (close - low) / (high - low));
+  const bodyY = Math.min(openY, closeY);
+  const bodyHeight = Math.abs(closeY - openY);
+  
   return (
     <g>
-      {/* Wick line */}
-      <line
-        x1={x + width / 2}
-        y1={low}
-        x2={x + width / 2}
-        y2={high}
-        stroke={color}
+      {/* Wick - the full vertical line */}
+      <line 
+        x1={x + width / 2} 
+        y1={y} 
+        x2={x + width / 2} 
+        y2={y + height}
+        stroke={color} 
         strokeWidth={1}
       />
-      {/* Candle body */}
-      <Rectangle
-        x={x}
-        y={isGreen ? close : open}
-        width={width}
-        height={Math.abs(open - close)}
+      
+      {/* Body - the rectangle */}
+      <rect 
+        x={x} 
+        y={bodyY} 
+        width={width} 
+        height={Math.max(1, bodyHeight)} // Ensure minimum height of 1px
         fill={color}
-        stroke={color}
       />
     </g>
   );
 };
 
+// Custom Tooltip Component
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -130,17 +128,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         </p>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <span className="text-muted-foreground">Open:</span>
-          <span className="text-white font-mono">{data.open.toFixed(4)}</span>
+          <span className="text-white font-mono">{data.open.toFixed(2)}</span>
           
           <span className="text-muted-foreground">High:</span>
-          <span className="text-white font-mono">{data.high.toFixed(4)}</span>
+          <span className="text-white font-mono">{data.high.toFixed(2)}</span>
           
           <span className="text-muted-foreground">Low:</span>
-          <span className="text-white font-mono">{data.low.toFixed(4)}</span>
+          <span className="text-white font-mono">{data.low.toFixed(2)}</span>
           
           <span className="text-muted-foreground">Close:</span>
-          <span className={`font-mono ${isGreen ? 'text-tradingChart-bullish' : 'text-tradingChart-bearish'}`}>
-            {data.close.toFixed(4)}
+          <span className={`font-mono ${isGreen ? 'text-[#00FF7F]' : 'text-[#FF4136]'}`}>
+            {data.close.toFixed(2)}
           </span>
         </div>
       </div>
@@ -155,11 +153,11 @@ const TradingChart: React.FC<TradingChartProps> = ({
   orders,
   onOrderUpdate
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('1m');
   const [loading, setLoading] = useState(false);
   const [candleData, setCandleData] = useState<any[]>([]);
   const { toast } = useToast();
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Simulate chart loading when asset or timeframe changes
   useEffect(() => {
@@ -169,24 +167,24 @@ const TradingChart: React.FC<TradingChartProps> = ({
     
     // Simulate API/WebSocket delay
     const timer = setTimeout(() => {
-      const newCandleData = generateMockCandles(selectedAsset.price, 60, timeframe);
+      const newCandleData = generateMockCandles(selectedAsset.price, 100, timeframe);
       setCandleData(newCandleData);
       setLoading(false);
-    }, 1000);
+    }, 800);
     
     return () => clearTimeout(timer);
   }, [selectedAsset, timeframe]);
 
   const formatXAxis = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('en-US', { 
+    return new Date(timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: false 
+      minute: '2-digit',
+      hour12: false
     });
   };
 
-  const formatPrice = (price: number) => {
-    return price.toFixed(4);
+  const formatYAxis = (value: number) => {
+    return value.toFixed(2);
   };
 
   const handleTimeframeChange = (newTimeframe: Timeframe) => {
@@ -228,9 +226,9 @@ const TradingChart: React.FC<TradingChartProps> = ({
         </div>
       </div>
 
-      <div
-        ref={chartRef}
-        className="chart-container flex-1 relative bg-tradingChart-bg rounded-lg border border-panel-border"
+      <div 
+        ref={chartContainerRef}
+        className="flex-1 relative bg-[#12131A] rounded-lg border border-panel-border overflow-hidden" 
       >
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -240,38 +238,38 @@ const TradingChart: React.FC<TradingChartProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={candleData}
-              margin={{ top: 20, right: 50, left: 20, bottom: 30 }}
+              margin={{ top: 20, right: 60, left: 0, bottom: 20 }}
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
+                stroke="#1E2230" 
                 vertical={true} 
                 horizontal={true} 
-                stroke="#151515" 
               />
               
               <XAxis 
                 dataKey="timestamp" 
                 tickFormatter={formatXAxis} 
-                tick={{ fill: '#999' }}
-                stroke="#333"
-                tickLine={{ stroke: '#333' }}
-                axisLine={{ stroke: '#333' }}
+                tick={{ fill: '#8F9CAF' }}
+                stroke="#2A2E39"
+                tickLine={{ stroke: '#2A2E39' }}
+                axisLine={{ stroke: '#2A2E39' }}
                 minTickGap={30}
               />
               
               <YAxis 
                 domain={getYAxisDomain()}
-                tickFormatter={formatPrice} 
+                tickFormatter={formatYAxis} 
                 orientation="right" 
-                tick={{ fill: '#999' }}
-                stroke="#333"
-                tickLine={{ stroke: '#333' }}
-                axisLine={{ stroke: '#333' }}
+                tick={{ fill: '#8F9CAF' }}
+                stroke="#2A2E39"
+                tickLine={{ stroke: '#2A2E39' }}
+                axisLine={{ stroke: '#2A2E39' }}
               />
               
               <Tooltip 
                 content={<CustomTooltip />}
-                cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '5 5' }}
+                cursor={{ stroke: '#3F4251', strokeDasharray: '3 3' }}
               />
               
               {/* Reference lines for orders */}
@@ -282,7 +280,7 @@ const TradingChart: React.FC<TradingChartProps> = ({
                   stroke={order.direction === 'buy' ? '#00FF7F' : '#FF4136'}
                   strokeDasharray="3 3"
                   label={{
-                    value: `${order.direction.toUpperCase()} @ ${order.price.toFixed(4)}`,
+                    value: `${order.direction.toUpperCase()} @ ${order.price.toFixed(2)}`,
                     fill: order.direction === 'buy' ? '#00FF7F' : '#FF4136',
                     position: 'insideBottomRight'
                   }}
@@ -290,28 +288,39 @@ const TradingChart: React.FC<TradingChartProps> = ({
               ))}
               
               {/* Custom candlesticks rendering */}
-              {candleData.map((entry, index) => (
-                <g key={`candle-${index}`}>
-                  {/* Wick */}
-                  <line
-                    x1={(index * (chartRef.current?.clientWidth || 1000) / candleData.length) + ((chartRef.current?.clientWidth || 1000) / candleData.length / 2)}
-                    y1={entry.low}
-                    x2={(index * (chartRef.current?.clientWidth || 1000) / candleData.length) + ((chartRef.current?.clientWidth || 1000) / candleData.length / 2)}
-                    y2={entry.high}
-                    stroke={entry.close > entry.open ? '#00FF7F' : '#FF4136'}
-                    strokeWidth={1}
-                  />
-                  
-                  {/* Candle body */}
-                  <Rectangle
-                    x={index * (chartRef.current?.clientWidth || 1000) / candleData.length}
-                    y={Math.min(entry.open, entry.close)}
-                    width={(chartRef.current?.clientWidth || 1000) / candleData.length - 4}
-                    height={Math.abs(entry.open - entry.close) || 1}
-                    fill={entry.close > entry.open ? '#00FF7F' : '#FF4136'}
-                  />
-                </g>
-              ))}
+              {candleData.map((entry, index) => {
+                const isGreen = entry.close > entry.open;
+                return (
+                  <g key={`candle-${index}`}>
+                    {/* Main wick line */}
+                    <line
+                      x1={(index + 0.5) * (100 / candleData.length) + '%'} 
+                      y1={isGreen ? entry.close : entry.open}
+                      x2={(index + 0.5) * (100 / candleData.length) + '%'}
+                      y2={entry.high}
+                      stroke={isGreen ? '#00FF7F' : '#FF4136'}
+                      strokeWidth={1}
+                    />
+                    <line
+                      x1={(index + 0.5) * (100 / candleData.length) + '%'} 
+                      y1={isGreen ? entry.open : entry.close}
+                      x2={(index + 0.5) * (100 / candleData.length) + '%'}
+                      y2={entry.low}
+                      stroke={isGreen ? '#00FF7F' : '#FF4136'}
+                      strokeWidth={1}
+                    />
+                    
+                    {/* Candle body */}
+                    <Rectangle
+                      x={(index + 0.1) * (100 / candleData.length) + '%'}
+                      y={Math.min(entry.open, entry.close)}
+                      width={(0.8) * (100 / candleData.length) + '%'}
+                      height={Math.max(1, Math.abs(entry.open - entry.close))}
+                      fill={isGreen ? '#00FF7F' : '#FF4136'}
+                    />
+                  </g>
+                );
+              })}
             </ComposedChart>
           </ResponsiveContainer>
         ) : (
