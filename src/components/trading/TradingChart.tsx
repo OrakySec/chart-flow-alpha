@@ -1,9 +1,17 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import TimeframeSelector, { Timeframe } from './TimeframeSelector';
 import { Order } from './OrderPanel';
 import { useToast } from '@/hooks/use-toast';
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+  Rectangle,
+} from 'recharts';
 
 interface TradingChartProps {
   selectedAsset?: {
@@ -64,8 +72,49 @@ const generateMockCandles = (
   return candles;
 };
 
-const TradingChart: React.FC<TradingChartProps> = ({ 
-  selectedAsset, 
+const CustomCandlestick = (props: any) => {
+  const {
+    x,
+    y,
+    width,
+    height,
+    open,
+    close,
+    low,
+    high,
+  } = props;
+
+  const isGreen = close > open;
+  const color = isGreen ? '#00FF7F' : '#FF4136';
+  const wickY1 = Math.min(y, y + height);
+  const wickY2 = Math.max(y, y + height);
+
+  return (
+    <g>
+      {/* Wick line */}
+      <line
+        x1={x + width / 2}
+        y1={low}
+        x2={x + width / 2}
+        y2={high}
+        stroke={color}
+        strokeWidth={1}
+      />
+      {/* Candle body */}
+      <Rectangle
+        x={x}
+        y={isGreen ? y + height : y}
+        width={width}
+        height={Math.abs(height)}
+        fill={color}
+        stroke={color}
+      />
+    </g>
+  );
+};
+
+const TradingChart: React.FC<TradingChartProps> = ({
+  selectedAsset,
   orders,
   onOrderUpdate
 }) => {
@@ -73,7 +122,6 @@ const TradingChart: React.FC<TradingChartProps> = ({
   const [timeframe, setTimeframe] = useState<Timeframe>('1m');
   const [loading, setLoading] = useState(false);
   const [candleData, setCandleData] = useState<any[]>([]);
-  const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
   const { toast } = useToast();
 
   // Simulate chart loading when asset or timeframe changes
@@ -91,29 +139,16 @@ const TradingChart: React.FC<TradingChartProps> = ({
     
     return () => clearTimeout(timer);
   }, [selectedAsset, timeframe]);
-  
-  // Update chart dimensions on resize
-  useEffect(() => {
-    if (!chartRef.current) return;
-    
-    const updateDimensions = () => {
-      if (chartRef.current) {
-        setChartDimensions({
-          width: chartRef.current.offsetWidth,
-          height: chartRef.current.offsetHeight
-        });
-      }
-    };
-    
-    // Initial measurement
-    updateDimensions();
-    
-    // Listen for resize events
-    window.addEventListener('resize', updateDimensions);
-    
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [chartRef.current]);
-  
+
+  const formatXAxis = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const formatPrice = (price: number) => {
+    return price.toFixed(2);
+  };
+
   const handleTimeframeChange = (newTimeframe: Timeframe) => {
     setTimeframe(newTimeframe);
     toast({
@@ -121,35 +156,6 @@ const TradingChart: React.FC<TradingChartProps> = ({
     });
   };
 
-  // This function would be used with a real charting library
-  // to place markers on the chart for orders
-  const renderOrderMarkers = () => {
-    // In a real implementation, we would convert order price to y-coordinate
-    // and timestamp to x-coordinate on the chart
-    
-    // For the mock version, we'll just place markers randomly on the chart area
-    return orders.map(order => {
-      const randomX = Math.random() * (chartDimensions.width - 60) + 30;
-      const randomY = Math.random() * (chartDimensions.height - 120) + 60;
-      
-      return (
-        <div 
-          key={order.id}
-          className={`order-marker ${order.direction}`}
-          style={{
-            left: `${randomX}px`,
-            top: `${randomY}px`,
-          }}
-          title={`${order.direction.toUpperCase()} ${order.assetSymbol} $${order.amount}`}
-        >
-          {order.direction === 'buy' ? '↑' : '↓'}
-        </div>
-      );
-    });
-  };
-  
-  // In a real app, we would use a proper charting library here
-  // like TradingView's Charting Library or Lightweight Charts
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-4">
@@ -159,43 +165,73 @@ const TradingChart: React.FC<TradingChartProps> = ({
               {selectedAsset.name} ({selectedAsset.symbol})
             </h2>
           )}
-          <TimeframeSelector 
-            activeTimeframe={timeframe} 
-            onTimeframeChange={handleTimeframeChange} 
+          <TimeframeSelector
+            activeTimeframe={timeframe}
+            onTimeframeChange={handleTimeframeChange}
           />
         </div>
-        
-        {/* This would be toolbar with chart tools in a real implementation */}
-        <div className="flex space-x-2">
-          {/* Placeholder for chart tools */}
-        </div>
       </div>
-      
-      <div 
-        ref={chartRef} 
-        className="chart-container flex-1 relative"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(0, 40, 83, 0.1) 0%, rgba(0, 40, 83, 0) 90%)',
-        }}
+
+      <div
+        ref={chartRef}
+        className="chart-container flex-1 relative bg 
+        bg-[#0A0A0A] rounded-lg border border-panel-border"
       >
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 size={32} className="animate-spin text-primary" />
           </div>
         ) : selectedAsset ? (
-          <>
-            {/* In a real implementation, we would render the chart here */}
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              {/* This is just a placeholder for the chart */}
-              <div className="text-center">
-                <p>TradingView Chart would be integrated here</p>
-                <p className="text-xs mt-2">Currently showing: {selectedAsset.symbol} {timeframe}</p>
-              </div>
-            </div>
-            
-            {/* Render order markers */}
-            {renderOrderMarkers()}
-          </>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={candleData}
+              margin={{ top: 20, right: 30, left: 50, bottom: 30 }}
+            >
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={formatXAxis}
+                stroke="#666"
+                tick={{ fill: '#999' }}
+              />
+              <YAxis
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={formatPrice}
+                orientation="right"
+                stroke="#666"
+                tick={{ fill: '#999' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1E2230',
+                  border: '1px solid #2A2E39',
+                  borderRadius: '8px',
+                }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
+                formatter={(value: any) => formatPrice(value)}
+                labelFormatter={(label) => formatXAxis(label as string)}
+              />
+              {orders.map((order) => (
+                <ReferenceLine
+                  key={order.id}
+                  y={order.price}
+                  stroke={order.direction === 'buy' ? '#00FF7F' : '#FF4136'}
+                  strokeDasharray="3 3"
+                />
+              ))}
+              {candleData.map((entry, index) => (
+                <CustomCandlestick
+                  key={`candle-${index}`}
+                  x={index * 40}
+                  open={entry.open}
+                  close={entry.close}
+                  high={entry.high}
+                  low={entry.low}
+                  height={Math.abs(entry.close - entry.open)}
+                />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <p>Select an asset to view chart</p>
