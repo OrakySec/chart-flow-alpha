@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Trading dashboard specific colors
+				tradingChart: {
+					bg: '#0A0A0A',
+					grid: '#151515',
+					bullish: '#00FF7F', // Neon green for bullish candles
+					bearish: '#FF4136',
+					text: '#FFFFFF',
+				},
+				panel: {
+					bg: '#131722',
+					hover: '#1E2230',
+					border: '#2A2E39',
 				}
 			},
 			borderRadius: {
@@ -84,12 +98,40 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'pulse-price-up': {
+					'0%, 100%': { backgroundColor: 'rgba(0, 255, 127, 0)' },
+					'50%': { backgroundColor: 'rgba(0, 255, 127, 0.2)' }
+				},
+				'pulse-price-down': {
+					'0%, 100%': { backgroundColor: 'rgba(255, 65, 54, 0)' },
+					'50%': { backgroundColor: 'rgba(255, 65, 54, 0.2)' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'slide-in-right': {
+					'0%': { transform: 'translateX(100%)' },
+					'100%': { transform: 'translateX(0)' }
+				},
+				'slide-in-left': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(0)' }
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-price-up': 'pulse-price-up 1s ease-in-out',
+				'pulse-price-down': 'pulse-price-down 1s ease-in-out',
+				'fade-in': 'fade-in 0.3s ease-in-out',
+				'slide-in-right': 'slide-in-right 0.3s ease-in-out',
+				'slide-in-left': 'slide-in-left 0.3s ease-in-out',
+			},
+			fontFamily: {
+				'montserrat': ['Montserrat', 'sans-serif'],
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
