@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Trending, Banknote, Globe, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, TrendingUp, Banknote, Globe, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type AssetCategory = 'All' | 'Crypto' | 'Stocks' | 'Forex';
@@ -88,9 +88,9 @@ const AssetPanel: React.FC<AssetPanelProps> = ({ onSelectAsset, selectedAsset })
   };
 
   const categories: { value: AssetCategory, label: string, icon: React.ReactNode }[] = [
-    { value: 'All', label: 'All Assets', icon: <Trending size={16} /> },
+    { value: 'All', label: 'All Assets', icon: <TrendingUp size={16} /> },
     { value: 'Crypto', label: 'Crypto', icon: <Banknote size={16} /> },
-    { value: 'Stocks', label: 'Stocks', icon: <Trending size={16} /> },
+    { value: 'Stocks', label: 'Stocks', icon: <TrendingUp size={16} /> },
     { value: 'Forex', label: 'Forex', icon: <Globe size={16} /> },
   ];
 
